@@ -1,26 +1,28 @@
 def download_video(url):
-    # import ssl
-    # import certifi
-    # import os
-
-    # # This force-points Python to use the certifi certificate bundle
-    # ssl._create_default_https_context = ssl._create_unverified_context
-    # # OR more accurately for your environment:
-    # os.environ['SSL_CERT_FILE'] = certifi.where()
-
     from pathlib import Path
     import yt_dlp
 
     Path("videos").mkdir(exist_ok=True)
-
-
     ydl_options = {
-    "outtmpl": "videos/%(title)s.%(ext)s"
+        "outtmpl": "videos/%(title)s.%(ext)s",
+        "socket_timeout": 30,
+        "nocheckcertificate": True,
     }
-
-    with yt_dlp.YoutubeDL(ydl_options) as ydl:
-        ydl.download([url])
-
+    try:
+        with yt_dlp.YoutubeDL(ydl_options) as ydl:
+            ydl.download([url])
+        return {
+            "url": url, 
+            "status": "success", 
+            "error": ""
+            }
+    except Exception as e:
+        return {
+            "url": url, 
+            "status": "failed", 
+            "error": str(e)
+            }
+    
 
 def read_video_urls(file_path):
     import csv
@@ -33,3 +35,23 @@ def read_video_urls(file_path):
             urls.append(row["url"])
             
     return urls
+
+def get_video_metadata(url):
+    import yt_dlp
+
+    ydl_options = {
+        "quiet": True,
+        "skip_download": True,
+        "nocheckcertificate": True, #my issue with certificate means i need this
+    }
+    with yt_dlp.YoutubeDL(ydl_options) as ydl:
+        info = ydl.extract_info(url, download=False)
+        return {
+            "title": info.get("title"),
+            "duration": info.get("duration"),
+            "uploader": info.get("uploader"),
+            "view_count": info.get("view_count"),
+            "ext": info.get("ext"),
+            "url": url,
+        }
+    
